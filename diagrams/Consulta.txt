@@ -1,0 +1,91 @@
+1. ROL PÚBLICO.
+
+Todos los usuarios de la base de datos tienen el rol PUBLIC . En una base de datos TimesTen recién creada, por defecto PUBLIC tiene privilegios SELECT y EXECUTE en varias tablas y vistas del sistema y funciones, procedimientos y paquetes PL / SQL. 
+
+Puede ver la lista de objetos mediante esta consulta: 
+ - SELECT nombre_tabla, privilegio FROM sys.dba_tab_privs WHERE grantee = 'PUBLIC';
+
+Los privilegios otorgados a PUBLIC como parte de la creación de la base de datos no se pueden revocar. Para ver una lista de estos privilegios, use esta consulta: 
+ - SELECT nombre_tabla, privilegio FROM sys.dba_tab_privs WHERE otorgante = 'SYS';
+
+El rol PUBLIC es un rol especial que cada cuenta de usuario de la base de datos tiene automáticamente cuando se crea la cuenta. Por defecto, no tiene privilegios otorgados, pero tiene numerosas concesiones, principalmente a objetos Java. No puede eliminar la función PUBLIC , y una concesión o revocación manual de esta función no tiene sentido, porque la cuenta de usuario siempre asumirá esta función. Debido a que todas las cuentas de usuario de la base de datos asumen el rol PUBLIC , no aparece en el DBA_ROLES y SESSION_ROLES vistas del diccionario de datos.
+
+Puede otorgar privilegios a PUBLIC, pero recuerde que esto hace que los privilegios estén disponibles para todos los usuarios de la base de datos Oracle. Por esta razón, tenga cuidado al otorgar privilegios al rol PUBLIC , privilegios particularmente poderosos como ANY privilegio y privilegios del sistema. Por ejemplo, si JSMITH tiene el privilegio del sistema CREATE PUBLIC SYNONYM , podría redefinir una interfaz que sabe que todos los demás usan, y luego señalarla con el PUBLIC SYNONYM que creó. En lugar de acceder a la interfaz correcta, los usuarios accederían a la interfaz de JSMITH , que posiblemente podría realizar actividades ilegales como robar las credenciales de inicio de sesión de los usuarios. 
+Este tipo de privilegios son muy poderosos y podrían representar un riesgo de seguridad si se le da a la persona equivocada. Tenga cuidado al otorgar privilegios usando ANY o PUBLIC . Como con todos los privilegios, debe seguir los principios del "mínimo privilegio" al otorgar estos privilegios a los usuarios. 
+
+2.
+
+SELECT * FROM USER_SYS_PRIVS; 
+SELECT * FROM USER_TAB_PRIVS;
+SELECT * FROM USER_ROLE_PRIVS;
+
+Los DBA y otros usuarios avanzados pueden encontrar los privilegios otorgados a otros usuarios con las versiones DBA_ de estas mismas vistas.
+Esas vistas solo muestran los privilegios otorgados directamente al usuario. Encontrar todos los privilegios, incluidos los otorgados indirectamente a través de roles, requiere sentencias de SQL recursivas más complicadas:
+
+A los usuarios se les pueden otorgar privilegios de sistema que están visibles en DBA_SYS_PRIVS. Se les puede otorgar privilegios de objetos que están visibles en DBA_TAB_PRIVS. Y se les pueden otorgar roles que están visibles en DBA_ROLE_PRIVS (los roles pueden ser predeterminados o no predeterminados y también pueden requerir una contraseña, por lo tanto, solo porque a un usuario se le haya otorgado un rol no significa que el usuario necesariamente pueda usar los privilegios) Adquirió a través del rol por defecto). Pero a esos roles se les pueden otorgar, a su vez, privilegios de sistema, privilegios de objeto y roles adicionales que se pueden ver al mirar ROLE_SYS_PRIVS, ROLE_TAB_PRIVS y ROLE_ROLE_PRIVS.
+
+
+
+3.
+La base de datos tiene dos tipos de privilegios:
+* De sistema: estos privilegios le permiten al usuario realizar acciones específicas sobre la base de datos.
+* De objetos: estos privilegios le permiten al usuario acceder y manipular objetos específicos.
+
+Los privilegios de sistema son permisos para realizar ciertas operaciones en la base de datos.
+Los siguientes son algunos de los privilegios de sistema existentes:
+- create session: para conectarse a la base de datos;
+- create table: crear tablas;
+- create sequence: crear secuencias;
+- create view: crear vistas;
+- create trigger: crear disparadores en su propio esquema;
+- create procedure: crear procedimientos y funciones;
+- execute any procedure: ejecutar cualquier procedimiento en cualquier esquema;
+- create user: crear usuarios y especificar claves;
+- create role: crear roles;
+- drop user: eliminar usuarios.
+
+Se asignan privilegios de sistema a un usuario mediante la instrucción "grant":
+Sintaxis básica:
+
+ grant PERMISODESISTEMA
+  to USUARIO;
+  
+Oracle permite conceder múltiples privilegios a múltiples usuarios en una misma sentencia, debemos separarlos por comas.
+En el siguiente ejemplo se concede el permiso para crear sesión a los usuarios "juan" y "ana":
+ grant create session
+ to juan, ana;
+ 
+En el siguiente ejemplo se conceden los permisos para crear tablas y vistas al usuario "ana":
+ grant create table, create view
+ to ana;
+ 
+En el siguiente ejemplo se conceden 2 permisos a 2 usuarios en una sola sentencia:
+ grant create trigger, create procedure
+ to juan, ana;
+ 
+Consultando el diccionario "dba_sys_privs" encontramos los privilegios concedidos a los distintos usuarios; y consultando "user_sys_privs" obtendremos la misma información pero únicamente del usuario actual.
+
+Los objetos creados en una base de datos Oracle se ordenan lógicamente en esquemas que representan un grupo de objetos creados por su propietario. Entonces, si SYSTEM creara una tabla llamada "mitos", estaría en el esquema de SYSTEM y se seleccionaría de la siguiente manera. 
+                        SELECT * FROM system.mythings; 
+                        
+SYSTEM podría otorgar privilegios sobre mitos a otros usuarios que tienen sus propios esquemas separados, pero SYSTEM está a cargo de esa tabla. 
+Aquí hay una lista de privilegios de objeto que se asignan directamente a roles o usuarios. 
+Descripción de privilegios  Privilegio SELECT para realizar sentencias SELECT en la tabla.  INSERTAR Privilegio para realizar sentencias INSERT en la tabla.  Privilegio de ACTUALIZACIÓN para realizar sentencias de ACTUALIZACIÓN en la tabla.  Privilegio DELETE para realizar sentencias DELETE en la tabla.  REFERENCIAS Privilegio para crear una restricción que se refiera a la tabla.  Privilegio ALTER para realizar sentencias ALTER TABLE para cambiar  La definición de la tabla.  ÍNDICE Privilegio para crear un índice en la tabla con el índice de creación  declaración.  TODOS Todos los privilegios en la mesa. 
+La cantidad que su cuenta le permitirá hacer en la base de datos estará sujeta a los privilegios de objeto que se le han otorgado al usuario directamente o mediante la concesión de grupos de privilegios llamados Roles. Se pueden otorgar roles a Roles y luego a un usuario, por lo que existe un elemento de anidamiento y herencia de privilegios. 
+Hay varias vistas de privilegios de objeto que proporcionan información sobre objetos en la base de datos. Por regla general, estos forman cuatro grupos principales de "VISTAS de usuario", "todas las" VISTAS, "Rol" y VIEWS "DBA". Las VIEWS de "usuario" brindan información dirigida a ese usuario específico que inició sesión, "todas" las vistas están dirigidas a cualquiera / todos los usuarios, las VIEWS de "Rol" están diseñadas para usuarios en el Rol del usuario conectado y las vistas de "DBA" que son hecho solo para los ojos del DBA. Las vistas de DBA tienen la información más detallada y privilegiada, como las contraseñas. 
+Los privilegios de objeto VIEWS for Oracle más importantes son: 
+USER_TAB_PRIVS  ALL_TAB_PRIVS  ROLE_TAB_PRIVS  DBA_TAB_PRIVS 
+USER_ROLE_PRIVS  ALL_ROLE_PRIVS  ROLE_ROLE_PRIVS  DBA_ROLE_PRIVS 
+Además, hay privilegios de objetos de Oracle que pertenecen a todo el sistema llamados privilegios del sistema. 
+USER_SYS_PRIVS  ALL_SYS_PRIVS  ROLE_SYS_PRIVS  DBA_SYS_PRIVS 
+http://www.dba-oracle.com/forensics/t_forensics_object_privileges.htm
+
+Una jerarquía muestra las relaciones entre grupos de columnas en una tabla de dimensiones. Por ejemplo, los trimestres contienen los meses y los meses contienen los días. Las jerarquías permiten cambiar de nivel en los informes.
+Una tabla de dimensiones puede contener una o más jerarquías. Una jerarquía suele empezar por un nivel total, seguido de niveles secundarios, y descender hasta el nivel de detalle inferior.
+Todas las jerarquías de una determinada dimensión deben tener un nivel inferior común. Por ejemplo, una dimensión de tiempo podría contener una jerarquía fiscal y una jerarquía de calendario, con Día como nivel inferior común. El día tiene dos niveles principales con nombre denominados Año fiscal y Año natural, que son ambos secundarios del nivel raíz Todo.
+En todos los niveles, excepto en el nivel total, se debe especificar al menos una columna como columna clave o de visualización. Sin embargo, no es necesario asociar explícitamente todas las columnas de una tabla a los niveles. Cualquier columna que no esté asociada a un nivel se asocia automáticamente al nivel inferior de la jerarquía que se corresponda con la tabla de dimensiones.
+No hay límite en el número de niveles que puede tener una jerarquía. El número total de niveles no es, por sí mismo, un factor determinante para el rendimiento de la consulta. Sin embargo, tenga en cuenta que, en el caso de consultas extremadamente complejas, incluso unos pocos niveles pueden afectar al rendimiento.
+
+
+
+
